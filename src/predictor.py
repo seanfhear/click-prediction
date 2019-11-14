@@ -1,27 +1,44 @@
 import numpy as np
 import pandas as pd
 from configparser import ConfigParser
+from src import preprocess
 
 cfg = ConfigParser()
 cfg.read('../config.cfg')
 DEFAULTS = cfg['DEFAULT']
 
 
-def get_df_from_csv(filename, training):
+def get_train_and_test():
     """
-    Read in a csv file as a dataframe and clean the data
-    :param filename:
-    :param training:
+    Returns a dataframe of the training dataset and a dataframe of the test dataset
     :return:
     """
-    df = pd.read_csv(filename, na_values=DEFAULTS['MissingValues'])
-    #df = clean_data(df, training)
-    return df
+    df_train = preprocess.get_df_from_csv(DEFAULTS['TrainingDataFile'])
+    df_test = preprocess.get_df_from_csv(DEFAULTS['TestDataFile'])
+
+    return df_train, df_test
 
 
-def main():
-    print(DEFAULTS['NumFolds'])
+def train(train):
+    ''
+
+
+def predict(train, test):
+    ''
+
+
+def main(train):
+    """
+    Runs train or predict based on the boolean passed in.
+    :param train:
+    :return:
+    """
+    train_data, test_data = get_train_and_test()
+    if train:
+        train(train_data)
+    else:
+        predict(train_data, test_data)
 
 
 if __name__ == '__main__':
-    main()
+    main(train=1)
