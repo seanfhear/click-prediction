@@ -19,7 +19,12 @@ def train(jabref_train, myvolts_train, homepage_train):
     myvolts_X_train, myvolts_X_test, myvolts_y_train, myvolts_y_test = \
         train_test_split(myvolts_train, myvolts_test, test_size=0.3, random_state=109)
 
-    clf = svm.SVC(kernel='linear', C=1.0)
+    clf = svm.SVC(
+        kernel=DEFAULTS['Kernel'],
+        C=float(DEFAULTS['C']),
+        gamma=DEFAULTS['Gamma'],
+        degree=int(DEFAULTS['Degree'])
+    )
     clf.fit(myvolts_X_train, myvolts_y_train)
     y_pred = clf.predict(myvolts_X_test)
 
