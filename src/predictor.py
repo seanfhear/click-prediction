@@ -13,8 +13,8 @@ def get_train_and_test():
     Returns a dataframe of the training dataset and a dataframe of the test dataset
     :return:
     """
-    df_train = preprocess.get_df_from_csv(DEFAULTS['TrainingDataFile'])
-    df_test = preprocess.get_df_from_csv(DEFAULTS['TestDataFile'])
+    df_train = preprocess.get_trainings_dfs(DEFAULTS['TrainingDataFile'])
+    df_test = preprocess.get_trainings_dfs(DEFAULTS['TestDataFile'])
 
     return df_train, df_test
 
