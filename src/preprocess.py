@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from configparser import ConfigParser
+from sklearn.preprocessing import LabelEncoder
 
 
 cfg = ConfigParser()
@@ -8,52 +9,85 @@ cfg.read('../config.cfg')
 DEFAULTS = cfg['DEFAULT']
 
 
-def get_trainings_dfs(filename):
+def get_trainings_dfs():
     """
-    Read in a csv file and return a cleaned dataframe for each organization
-    :param filename: training data filename
+    Read in the training data csv file and return a cleaned dataframe for each organization
     :return:
     """
-    df = pd.read_csv(filename, na_values=DEFAULTS['MissingValues'])
+    missing_values = DEFAULTS['MissingValues'].split(',')
+    df = pd.read_csv(DEFAULTS['TrainingFile'], na_values=missing_values)
 
-    jabref_df = clean_data(df, DEFAULTS['JabRef'])
-    myvolts_df = clean_data(df, DEFAULTS['MyVolts'])
-    homepage_df = clean_data(df, DEFAULTS['HomePage'])
+    jabref_df, myvolts_df, homepage_df = split_data(df)
+
+    jabref_df = clean_jabref(jabref_df)
+    myvolts_df = clean_myvolts(myvolts_df)
+    homepage_df = clean_homepage(homepage_df)
 
     return jabref_df, myvolts_df, homepage_df
 
 
-def clean_data(df, org):
+def get_test_dfs():
     """
-    Redirect to cleaning function for each of the three organizations in the dataset
-    :param df:
-    :param org: Integer. Which org the data is for, Jabref, MyVolts or JB's homepage
+    Read in the test data csv file and return a dataframe for each organization
     :return:
     """
-    if org == DEFAULTS['JabRef']:
-        return clean_jabref(df)
-    if org == DEFAULTS['MyVolts']:
-        return clean_myvolts(df)
-    if org == DEFAULTS['HomePage']:
-        return clean_homepage(df)
+    df = pd.read_csv(DEFAULTS['TestFile'], na_values=DEFAULTS['MissingValues'])
+
+    jabref_df, myvolts_df, homepage_df = split_data(df)
+
+    return jabref_df, myvolts_df, homepage_df
+
+
+def split_data(df):
+    """
+    Split dataset into three subsets, one for each organization
+    :param df:
+    :return:
+    """
+    jabref_df = df[df['organization_id'] == int(DEFAULTS['JabRef'])]
+    myvolts_df = df[df['organization_id'] == int(DEFAULTS['MyVolts'])]
+    homepage_df = df[df['organization_id'] == int(DEFAULTS['HomePage'])]
+
+    return jabref_df, myvolts_df, homepage_df
 
 
 def clean_jabref(df):
-    new_df = df[df['organization_id'] == int(DEFAULTS['JabRef'])]\
-        .drop(DEFAULTS['DroppedJabRefCols'].split(','), axis=1)
-
-    return new_df
+    return df.drop(DEFAULTS['JabRefDroppedCols'].split(','), axis=1)
 
 
 def clean_myvolts(df):
-    new_df = df[df['organization_id'] == int(DEFAULTS['MyVolts'])]\
-        .drop(DEFAULTS['DroppedMyVoltsCols'].split(','), axis=1)
+    dropped_cols = DEFAULTS['MyVoltsDroppedCols'].split(',') + DEFAULTS['MyVoltsIgnoredCols'].split(',')
+    new_df = df.drop(dropped_cols, axis=1)
+
+    for col in DEFAULTS['MyVoltsNumberCols'].split(','):
+        mean = new_df[col].mean()
+        new_df[col].fillna(mean, inplace=True)
+    new_df.fillna('unknown', inplace=True)
+
+    encode_cols = DEFAULTS['MyVoltsEncodeCols'].split(',')
+    # new_df = oh_encode(new_df, encode_cols)
+    new_df = label_encode(new_df, encode_cols)
 
     return new_df
 
 
 def clean_homepage(df):
-    new_df = df[df['organization_id'] == int(DEFAULTS['HomePage'])]\
-        .drop(DEFAULTS['DroppedHomePageCols'].split(','), axis=1)
+    return df.drop(DEFAULTS['HomePageDroppedCols'].split(','), axis=1)
 
-    return new_df
+
+def oh_encode(df, cols):
+    """
+    One Hot Encode the columns defined in DUMMY_COLS
+    :param df:
+    :return:
+    """
+    for col in cols:
+        df = pd.concat((df.drop(columns=col), pd.get_dummies(df[col], drop_first=True)), axis=1)
+    return df
+
+
+def label_encode(df, cols):
+    le = LabelEncoder()
+    for col in cols:
+        df[col] = le.fit_transform(df[col])
+    return df

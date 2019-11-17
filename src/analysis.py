@@ -37,11 +37,20 @@ def main():
     # show_cols_to_drop(jabref_df)
     # show_cols_to_drop(homepage_df)
 
-    jabref_df, myvolts_df, homepage_df = preprocess.get_trainings_dfs(DEFAULTS['TrainingDataFile'])
+    jabref_df, myvolts_df, homepage_df = preprocess.get_trainings_dfs()
 
-    print(len(jabref_df.columns))
-    print(len(myvolts_df.columns))
-    print(len(homepage_df.columns))
+    # print(len(jabref_df.columns))
+    # print(len(myvolts_df.columns))
+    # print(len(homepage_df.columns))
+
+    mv_drop = DEFAULTS['MyVoltsDroppedCols'].split(',')
+    mv_ignore = DEFAULTS['MyVoltsIgnoredCols'].split(',')
+    mv_encode = DEFAULTS['MyVoltsEncodeCols'].split(',')
+    mv_number_cols = DEFAULTS['MyVoltsNumberCols'].split(',')
+
+    for col in mv_number_cols:
+        if col in mv_drop:
+            print(col)
 
 
 if __name__ == '__main__':
