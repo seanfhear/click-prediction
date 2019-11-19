@@ -64,9 +64,11 @@ def clean_myvolts(df):
         new_df[col].fillna(mean, inplace=True)
     new_df.fillna('unknown', inplace=True)
 
-    encode_cols = DEFAULTS['MyVoltsEncodeCols'].split(',')
-    # new_df = oh_encode(new_df, encode_cols)
-    new_df = label_encode(new_df, encode_cols)
+    one_hot_encode_cols = DEFAULTS['MyVoltsOneHotEncodeCols'].split(',')
+    new_df = oh_encode(new_df, one_hot_encode_cols)
+
+    label_encode_cols = DEFAULTS['MyVoltsLabelEncodeCols'].split(',')
+    new_df = label_encode(new_df, label_encode_cols)
 
     return new_df
 

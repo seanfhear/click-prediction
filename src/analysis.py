@@ -45,12 +45,11 @@ def main():
 
     mv_drop = DEFAULTS['MyVoltsDroppedCols'].split(',')
     mv_ignore = DEFAULTS['MyVoltsIgnoredCols'].split(',')
-    mv_encode = DEFAULTS['MyVoltsEncodeCols'].split(',')
+    mv_encode = DEFAULTS['MyVoltsLabelEncodeCols'].split(',')
     mv_number_cols = DEFAULTS['MyVoltsNumberCols'].split(',')
 
-    for col in mv_number_cols:
-        if col in mv_drop:
-            print(col)
+    for col in mv_encode:
+        print(myvolts_df[col].value_counts())
 
 
 if __name__ == '__main__':
