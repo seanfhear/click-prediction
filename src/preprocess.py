@@ -93,3 +93,28 @@ def label_encode(df, cols):
     for col in cols:
         df[col] = le.fit_transform(df[col])
     return df
+
+
+# https://www.kaggle.com/rafjaa/resampling-strategies-for-imbalanced-datasets
+def undersample(df):
+    count_class_0, count_class_1 = df[DEFAULTS['Target']].value_counts()
+
+    df_class_0 = df[df[DEFAULTS['Target']] == 0]
+    df_class_1 = df[df[DEFAULTS['Target']] == 1]
+
+    df_class_0_under = df_class_0.sample(count_class_1)
+    df_test_under = pd.concat([df_class_0_under, df_class_1], axis=0)
+
+    return df_test_under
+
+
+def oversample(df):
+    count_class_0, count_class_1 = df[DEFAULTS['Target']].value_counts()
+
+    df_class_0 = df[df[DEFAULTS['Target']] == 0]
+    df_class_1 = df[df[DEFAULTS['Target']] == 1]
+
+    df_class_1_over = df_class_1.sample(count_class_0, replace=True)
+    df_test_over = pd.concat([df_class_0, df_class_1_over], axis=0)
+
+    return df_test_over
