@@ -1,8 +1,10 @@
 import numpy as np
 import pandas as pd
 from configparser import ConfigParser
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
 
 cfg = ConfigParser()
 cfg.read('../config.cfg')
@@ -26,16 +28,52 @@ def get_trainings_dfs():
     return jabref_df, myvolts_df, homepage_df
 
 
-def get_test_dfs():
+def get_training_and_test_dfs():
     """
     Read in the test data csv file and return a dataframe for each organization
     :return:
     """
-    df = pd.read_csv(DEFAULTS['TestFile'], na_values=DEFAULTS['MissingValues'])
+    missing_values = DEFAULTS['MissingValues'].split(',')
+    df_train = pd.read_csv(DEFAULTS['TrainingFile'], na_values=missing_values)
+    df_test = pd.read_csv(DEFAULTS['TestFile'], na_values=missing_values)
+    output_df = pd.DataFrame(columns=['recommendation_set_id', 'set_clicked'])
 
-    jabref_df, myvolts_df, homepage_df = split_data(df)
+    jabref_train, myvolts_train, homepage_train = split_data(df_train)
+    jabref_test, myvolts_test, homepage_test = split_data(df_test)
 
-    return jabref_df, myvolts_df, homepage_df
+    output_df['recommendation_set_id'] = myvolts_test['recommendation_set_id'].copy()
+
+    dropped_cols = DEFAULTS['MyVoltsDroppedCols'].split(',') + DEFAULTS['MyVoltsIgnoredCols'].split(',')
+    myvolts_train = myvolts_train.drop(dropped_cols, axis=1)
+    myvolts_test = myvolts_test.drop(dropped_cols, axis=1)
+
+    for col in DEFAULTS['MyVoltsNumberCols'].split(','):
+        mean = myvolts_train[col].mean()
+        myvolts_train[col].fillna(mean, inplace=True)
+
+        mean = myvolts_test[col].mean()
+        myvolts_test[col].fillna(mean, inplace=True)
+
+    myvolts_train.fillna('unknown', inplace=True)
+    myvolts_test.fillna('unknown', inplace=True)
+
+    myvolts_train['train'] = 1
+    myvolts_test['train'] = 0
+
+    combined = pd.concat([myvolts_train, myvolts_test])
+
+    one_hot_encode_cols = DEFAULTS['MyVoltsOneHotEncodeCols'].split(',')
+    combined = oh_encode(combined, one_hot_encode_cols)
+
+    label_encode_cols = DEFAULTS['MyVoltsLabelEncodeCols'].split(',')
+    combined = label_encode(combined, label_encode_cols)
+
+    myvolts_train = combined[combined['train'] == 1]
+    myvolts_test = combined[combined['train'] == 0]
+    myvolts_train = myvolts_train.drop(['train'], axis=1)
+    myvolts_test = myvolts_test.drop(['train'], axis=1)
+
+    return myvolts_train, myvolts_test, output_df
 
 
 def split_data(df):
@@ -52,12 +90,28 @@ def split_data(df):
 
 
 def clean_jabref(df):
-    return df.drop(DEFAULTS['JabRefDroppedCols'].split(','), axis=1)
+    dropped_cols =  df.drop(DEFAULTS['JabRefDroppedCols'].split(','), axis=1)
+    new_df = df.drop(dropped_cols, axis=1)
+    #
+    # for col in DEFAULTS['JabRefNumberCols'].split(','):
+    #     mean = new_df[col].mean()
+    #     new_df[col].fillna(mean, inplace=True)
+    # new_df.fillna('unknown', inplace=True)
+    #
+    # one_hot_encode_cols = DEFAULTS['JabRefOneHotEncodeCols'].split(',')
+    # new_df = oh_encode(new_df, one_hot_encode_cols)
+    #
+    # label_encode_cols = DEFAULTS['JabRefLabelEncodeCols'].split(',')
+    # new_df = label_encode(new_df, label_encode_cols)
+
+    return new_df
 
 
 def clean_myvolts(df):
     dropped_cols = DEFAULTS['MyVoltsDroppedCols'].split(',') + DEFAULTS['MyVoltsIgnoredCols'].split(',')
     new_df = df.drop(dropped_cols, axis=1)
+
+    # new_df.dropna(inplace=True)
 
     for col in DEFAULTS['MyVoltsNumberCols'].split(','):
         mean = new_df[col].mean()
@@ -83,7 +137,9 @@ def oh_encode(df, cols):
     :param df:
     :return:
     """
+    ohe = OneHotEncoder()
     for col in cols:
+        # df[col] = ohe.fit_transform(df[col])
         df = pd.concat((df.drop(columns=col), pd.get_dummies(df[col], drop_first=True)), axis=1)
     return df
 

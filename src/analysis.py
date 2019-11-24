@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from configparser import ConfigParser
 from src import preprocess
 
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
 
 cfg = ConfigParser()
 cfg.read('../config.cfg', encoding='utf-8')
@@ -26,6 +28,14 @@ def show_cols_to_drop(df):
     print(','.join(cols_to_drop))
 
 
+def show_corr_matrix(df):
+    corr_matrix = df.corr().abs()
+    print(corr_matrix[DEFAULTS['Target']].sort_values(ascending=False))
+
+    plt.matshow(corr_matrix)
+    plt.show()
+
+
 def main():
     # df_train = preprocess.get_df_from_csv(DEFAULTS['TrainingDataFile'])
     # count_values(df_train, 'recommendation_algorithm_id_used')
@@ -44,12 +54,20 @@ def main():
     # print(len(homepage_df.columns))
 
     mv_drop = DEFAULTS['MyVoltsDroppedCols'].split(',')
+    jr_drop = DEFAULTS['JabRefDroppedCols'].split(',')
     mv_ignore = DEFAULTS['MyVoltsIgnoredCols'].split(',')
+    jr_ignore = DEFAULTS['JabRefIgnoredCols'].split(',')
     mv_encode = DEFAULTS['MyVoltsLabelEncodeCols'].split(',')
+    jr_encode = DEFAULTS['JabRefLabelEncodeCols'].split(',')
     mv_number_cols = DEFAULTS['MyVoltsNumberCols'].split(',')
 
-    for col in mv_encode:
-        print(myvolts_df[col].value_counts())
+    print(jabref_df.columns)
+
+    for col in jr_encode:
+        if col in jr_drop:
+            print(jabref_df[col].value_counts())
+
+    # show_corr_matrix(myvolts_df)
 
 
 if __name__ == '__main__':
