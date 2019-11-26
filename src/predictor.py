@@ -25,14 +25,14 @@ def train_model(model_type, X_train, y_train):
         )
     elif model_type == DEFAULTS['ModelRandomForest']:
         clf = RandomForestClassifier(
-            random_state=int(DEFAULTS['RandomState']),
+            random_state=int(DEFAULTS['RFRandomState']),
             n_estimators=int(DEFAULTS['NEstimators']),
             class_weight=DEFAULTS['ClassWeight']
         )
     elif model_type == DEFAULTS['ModelDecisionTree']:
         clf = DecisionTreeClassifier(
-            random_state=1,
-            max_depth=19
+            random_state=int(DEFAULTS['DTRandomState']),
+            max_depth=int(DEFAULTS['MaxDepth'])
         )
 
     clf.fit(X_train, y_train)
@@ -79,6 +79,32 @@ def train(jr_train, mv_train, hp_train):
 def predict(mv_train, mv_test, output_df):
     start_time = datetime.now()
 
+    # clf = None
+    # max_acc = 0
+    # for _ in range(100):
+    #     msk = np.random.rand(len(mv_train)) < 0.8
+    #
+    #     mv_train_sampled = preprocess.undersample(mv_train[msk])
+    #     mv_test_sampled = mv_train[~msk]
+    #
+    #     mv_y_train = mv_train_sampled[DEFAULTS['Target']]
+    #     mv_X_train = mv_train_sampled.drop(DEFAULTS['TrainingTargets'].split(','), axis=1)
+    #
+    #     mv_y_test = mv_test_sampled[DEFAULTS['Target']]
+    #     mv_X_test = mv_test_sampled.drop(DEFAULTS['TrainingTargets'].split(','), axis=1)
+    #
+    #     model_type = DEFAULTS['Model']
+    #     test_clf = train_model(model_type, mv_X_train, mv_y_train)
+    #
+    #     y_pred = test_clf.predict(mv_X_test)
+    #     acc = metrics.accuracy_score(mv_y_test, y_pred)
+    #
+    #     if acc > max_acc:
+    #         clf = test_clf
+    #         max_acc = acc
+    #
+    # print(max_acc)
+
     mv_y = mv_train[DEFAULTS['Target']]
     mv_X = mv_train.drop(DEFAULTS['TrainingTargets'].split(','), axis=1)
 
@@ -89,12 +115,10 @@ def predict(mv_train, mv_test, output_df):
 
     y_pred = clf.predict(mv_test)
 
-    # print(mv_output_df.describe())
-    print(y_pred.shape)
-
     output_df['set_clicked'] = y_pred.flatten()
     output_df.to_csv(DEFAULTS['OutputFile'])
 
+    print(output_df['set_clicked'].value_counts())
     print('Time Taken: ', datetime.now() - start_time)
 
 

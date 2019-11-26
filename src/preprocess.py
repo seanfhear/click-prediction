@@ -1,7 +1,7 @@
-import numpy as np
 import pandas as pd
 from configparser import ConfigParser
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from category_encoders import CatBoostEncoder
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -57,21 +57,26 @@ def get_training_and_test_dfs():
     myvolts_train.fillna('unknown', inplace=True)
     myvolts_test.fillna('unknown', inplace=True)
 
-    myvolts_train['train'] = 1
-    myvolts_test['train'] = 0
+    # myvolts_train['train'] = 1
+    # myvolts_test['train'] = 0
 
-    combined = pd.concat([myvolts_train, myvolts_test])
+    encode_cols = DEFAULTS['MyVoltsEncodeCols'].split(',')
 
-    one_hot_encode_cols = DEFAULTS['MyVoltsOneHotEncodeCols'].split(',')
-    combined = oh_encode(combined, one_hot_encode_cols)
+    cbe = CatBoostEncoder(cols=encode_cols, return_df=True, drop_invariant=True, handle_missing='return_nan')
+    cbe.fit(X=myvolts_train, y=myvolts_train['set_clicked'])
+    myvolts_train = cbe.transform(myvolts_train)
+    myvolts_test = cbe.transform(myvolts_test)
 
-    label_encode_cols = DEFAULTS['MyVoltsLabelEncodeCols'].split(',')
-    combined = label_encode(combined, label_encode_cols)
+    # combined = pd.concat([myvolts_train, myvolts_test])
+    # combined = oh_encode(combined, encode_cols)
 
-    myvolts_train = combined[combined['train'] == 1]
-    myvolts_test = combined[combined['train'] == 0]
-    myvolts_train = myvolts_train.drop(['train'], axis=1)
-    myvolts_test = myvolts_test.drop(['train'], axis=1)
+    # label_encode_cols = DEFAULTS['MyVoltsLabelEncodeCols'].split(',')
+    # combined = label_encode(combined, label_encode_cols)
+
+    # myvolts_train = combined[combined['train'] == 1]
+    # myvolts_test = combined[combined['train'] == 0]
+    # myvolts_train = myvolts_train.drop(['train'], axis=1)
+    # myvolts_test = myvolts_test.drop(['train'], axis=1)
 
     return myvolts_train, myvolts_test, output_df
 
@@ -92,17 +97,6 @@ def split_data(df):
 def clean_jabref(df):
     dropped_cols =  df.drop(DEFAULTS['JabRefDroppedCols'].split(','), axis=1)
     new_df = df.drop(dropped_cols, axis=1)
-    #
-    # for col in DEFAULTS['JabRefNumberCols'].split(','):
-    #     mean = new_df[col].mean()
-    #     new_df[col].fillna(mean, inplace=True)
-    # new_df.fillna('unknown', inplace=True)
-    #
-    # one_hot_encode_cols = DEFAULTS['JabRefOneHotEncodeCols'].split(',')
-    # new_df = oh_encode(new_df, one_hot_encode_cols)
-    #
-    # label_encode_cols = DEFAULTS['JabRefLabelEncodeCols'].split(',')
-    # new_df = label_encode(new_df, label_encode_cols)
 
     return new_df
 
@@ -118,11 +112,17 @@ def clean_myvolts(df):
         new_df[col].fillna(mean, inplace=True)
     new_df.fillna('unknown', inplace=True)
 
-    one_hot_encode_cols = DEFAULTS['MyVoltsOneHotEncodeCols'].split(',')
-    new_df = oh_encode(new_df, one_hot_encode_cols)
+    encode_cols = DEFAULTS['MyVoltsEncodeCols'].split(',')
 
-    label_encode_cols = DEFAULTS['MyVoltsLabelEncodeCols'].split(',')
-    new_df = label_encode(new_df, label_encode_cols)
+    cbe = CatBoostEncoder(cols=encode_cols, return_df=True, drop_invariant=True, handle_missing='return_nan')
+    cbe.fit(X=new_df, y=new_df['set_clicked'])
+    new_df = cbe.transform(new_df)
+
+    # one_hot_encode_cols = DEFAULTS['MyVoltsOneHotEncodeCols'].split(',')
+    # new_df = oh_encode(new_df, one_hot_encode_cols)
+
+    # label_encode_cols = DEFAULTS['MyVoltsLabelEncodeCols'].split(',')
+    # new_df = label_encode(new_df, label_encode_cols)
 
     return new_df
 
